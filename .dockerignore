@@ -1,0 +1,11 @@
+.cache
+.deploy
+.gitlab-ci.yml
+.gitignore
+docker-compose.yml
+docker-compose.dev.yml
+README.md
+.dockerignore
+.git
+Dockerfile
+src/pyproject.toml
