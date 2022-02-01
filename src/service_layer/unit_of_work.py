@@ -3,7 +3,7 @@ from abc import ABC, abstractmethod
 from adapters.repository import AbstractRepository, FakeDb
 
 
-class AbstractUnitOfWork(ABC):
+class AbstractUOW(ABC):
     data: AbstractRepository
 
     @abstractmethod
@@ -23,7 +23,7 @@ class AbstractUnitOfWork(ABC):
             raise exc_val
 
 
-class FakeUnitOfWork(AbstractUnitOfWork):
+class FakeUnitOfWork(AbstractUOW):
     def __init__(self, db: AbstractRepository):
         self.data = db
         self.committed = False
@@ -36,12 +36,3 @@ class FakeUnitOfWork(AbstractUnitOfWork):
 
     def __enter__(self):
         return self
-
-
-# @contextmanager
-# def fake_uow():
-#     resource = FakeDb()
-#     try:
-#         yield resource
-#     finally:
-#         resource.rollback() # если выйти из контекста не сделав commit то не сохранится
