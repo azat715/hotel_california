@@ -2,7 +2,7 @@ import enum
 import pdb
 from typing import List, Optional
 
-from domain.models import BookingDate, Order, Room
+from domain.models import BookingDate, Order, Room, User
 from service_layer.exceptions import RoomExistError, RoomNonFree
 from service_layer.unit_of_work import AbstractUOW
 
@@ -10,6 +10,13 @@ from service_layer.unit_of_work import AbstractUOW
 class Status(enum.IntEnum):
     ARRIVAL = 1
     DEPARTURE = 2
+
+
+def add_user(name: str, email: str, workers: AbstractUOW, is_admin: bool = False):
+    with workers as worker:
+        u = User.create(name, email, is_admin)
+        worker.data.add(u)
+        worker.commit()
 
 
 def add_room(number: int, capacity: int, price: float, workers: AbstractUOW):
@@ -52,11 +59,10 @@ def check_free_room(test_dates: tuple[BookingDate], dates: List[BookingDate]):
     # сортирую по времени
     dates.sort(key=lambda x: x.date)
     # если идут два подряд заезда/выезда ошибка
-    # pdb.set_trace()
+
     while dates:
         first = dates.pop(0)
         second = dates.pop(0)
-        # pdb.set_trace()
         if second.status == first.status:
             raise RoomNonFree()
 

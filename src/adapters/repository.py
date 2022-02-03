@@ -1,8 +1,9 @@
 from abc import ABC, abstractmethod
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Optional
 
-from black import Optional
 from domain.models import Model
+from sqlalchemy import select
+from sqlalchemy.orm import Session
 
 
 class AbstractRepository(ABC):
@@ -70,3 +71,25 @@ class FakeDb(AbstractRepository):
 
     def exists(self, model: Model) -> bool:
         return model in self._data
+
+
+class UserRepository(AbstractRepository):
+    def __init__(self, session: Session):
+        self.session = session
+
+    def add(self, model: Model):
+        self.session.add(model)
+
+    def get(self, model: Model, email: str) -> Optional[Model]:
+        statement = select(model).filter_by(email=email)
+        return self.session.execute(statement).one()
+
+    def filter(self, reference: Dict[str, Any]) -> List[Model]:
+        raise NotImplementedError
+
+    def all(self) -> List[Model]:
+        raise NotImplementedError
+
+    def exists(self, model: Model, email: str) -> bool:
+        statement = select(model).where(email=email).exists()
+        return self.session.execute(statement)
