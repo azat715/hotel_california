@@ -1,6 +1,6 @@
-from domain.models import User
+from hotel_california.domain.models import User
 from sqlalchemy import Boolean, Column, Integer, MetaData, String, Table
-from sqlalchemy.orm import registry, relationship
+from sqlalchemy.orm import registry
 
 mapper_registry = registry()
 
@@ -10,8 +10,9 @@ user = Table(
     "user",
     metadata_obj,
     Column("id", Integer, primary_key=True),
-    Column("name", String(50)),
-    Column("email", String(50), unique=True),
+    Column("name", String()),
+    # тут я не могу поставить unique=True чтобы проверить уникальность емайлов
+    Column("email", String()),
     Column("is_admin", Boolean),
 )
 

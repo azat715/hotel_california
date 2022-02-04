@@ -1,5 +1,5 @@
-from adapters.repository import FakeDb
-from domain.models import Room
+from hotel_california.adapters.repository import FakeDb
+from hotel_california.domain.models import Room
 
 
 def test_fake_repository_get_room():

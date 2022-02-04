@@ -1,9 +1,9 @@
 import pytest
-from adapters.repository import FakeDb
-from domain.models import Room
-from service_layer.exceptions import RoomExistError
-from service_layer.service.hotel import add_room, get_room_by_cap
-from service_layer.unit_of_work import FakeUnitOfWork
+from hotel_california.adapters.repository import FakeDb
+from hotel_california.domain.models import Room
+from hotel_california.service_layer.exceptions import RoomExistError
+from hotel_california.service_layer.service.hotel import add_room, get_room_by_cap
+from hotel_california.service_layer.unit_of_work import FakeUnitOfWork
 
 
 def test_add_room():

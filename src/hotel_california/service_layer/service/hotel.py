@@ -1,10 +1,9 @@
 import enum
-import pdb
 from typing import List, Optional
 
-from domain.models import BookingDate, Order, Room, User
-from service_layer.exceptions import RoomExistError, RoomNonFree
-from service_layer.unit_of_work import AbstractUOW
+from hotel_california.domain.models import BookingDate, NonUniqEmail, Order, Room, User
+from hotel_california.service_layer.exceptions import RoomExistError, RoomNonFree
+from hotel_california.service_layer.unit_of_work import AbstractUOW
 
 
 class Status(enum.IntEnum):
@@ -12,10 +11,11 @@ class Status(enum.IntEnum):
     DEPARTURE = 2
 
 
-def add_user(name: str, email: str, workers: AbstractUOW, is_admin: bool = False):
+def add_user(user: User, workers: AbstractUOW):
     with workers as worker:
-        u = User.create(name, email, is_admin)
-        worker.data.add(u)
+        if user.email in [i[0].email for i in worker.data.all()]:
+            raise NonUniqEmail(user.email)
+        worker.data.add(user)
         worker.commit()
 
 

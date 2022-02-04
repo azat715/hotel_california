@@ -1,9 +1,9 @@
 from datetime import date
 
 import pytest
-from domain.models import BookingDate
-from service_layer.exceptions import RoomNonFree
-from service_layer.service.hotel import Status, check_free_room
+from hotel_california.domain.models import BookingDate
+from hotel_california.service_layer.exceptions import RoomNonFree
+from hotel_california.service_layer.service.hotel import Status, check_free_room
 
 
 def test_find_room():

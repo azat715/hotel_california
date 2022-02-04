@@ -1,7 +1,7 @@
 from abc import ABC, abstractmethod
 from typing import Any, Dict, List, Optional
 
-from domain.models import Model
+from hotel_california.domain.models import Model, User
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
@@ -12,21 +12,7 @@ class AbstractRepository(ABC):
         raise NotImplementedError
 
     @abstractmethod
-    def get(
-        self, reference: Dict[str, Any]
-    ) -> Optional[Model]:  # возможно нужно Dict[str, Any]
-        raise NotImplementedError
-
-    @abstractmethod
-    def filter(self, reference: Dict[str, Any]) -> List[Model]:
-        raise NotImplementedError
-
-    @abstractmethod
     def all(self) -> List[Model]:
-        raise NotImplementedError
-
-    @abstractmethod
-    def exists(self, model: Model) -> bool:
         raise NotImplementedError
 
 
@@ -79,16 +65,10 @@ class UserRepository(AbstractRepository):
     def add(self, model: Model):
         self.session.add(model)
 
-    def get(self, model: Model, email: str) -> Optional[Model]:
-        statement = select(model).filter_by(email=email)
+    def get(self, email: str) -> Optional[User]:
+        statement = select(User).filter_by(email=email)
         return self.session.execute(statement).one()
 
-    def filter(self, reference: Dict[str, Any]) -> List[Model]:
-        raise NotImplementedError
-
     def all(self) -> List[Model]:
-        raise NotImplementedError
-
-    def exists(self, model: Model, email: str) -> bool:
-        statement = select(model).where(email=email).exists()
-        return self.session.execute(statement)
+        statement = select(User)
+        return self.session.execute(statement).all()

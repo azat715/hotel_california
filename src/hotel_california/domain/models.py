@@ -2,7 +2,14 @@ from abc import ABC
 from datetime import date
 from typing import List, Optional
 
+from pydantic import EmailStr
 from pydantic.dataclasses import dataclass
+
+
+class NonUniqEmail(Exception):
+    def __init__(self, email: str):
+        message = f"Email {email} должен быть уникальным"
+        super().__init__(message)
 
 
 class Model(ABC):
@@ -39,12 +46,8 @@ class Order(Model):
 @dataclass(unsafe_hash=True)
 class User(Model):
     name: str
-    email: str  # должно быть уникальным
+    email: EmailStr  # должно быть уникальным
     is_admin: bool = False
-
-    @classmethod
-    def create(cls, name, email, is_admin) -> "User":
-        return cls(name, email, is_admin)
 
     @property
     def check_admin(self) -> bool:
