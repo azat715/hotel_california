@@ -48,9 +48,9 @@ DEFAULT_SESSION_FACTORY = sessionmaker(bind=ENGINE)
 class SqlAlchemyUOW(AbstractUOW):
     def __init__(self, session_factory=DEFAULT_SESSION_FACTORY):
         self.session_factory = session_factory
+        self.session = self.session_factory()  # type: Session
 
     def __enter__(self):
-        self.session = self.session_factory()  # type: Session
         self.data = UserRepository(self.session)
         return self
 

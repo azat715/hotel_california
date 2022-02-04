@@ -25,8 +25,7 @@ class AbstractRepository(ABC):
     def all(self) -> List[Model]:
         raise NotImplementedError
 
-    abstractmethod
-
+    @abstractmethod
     def exists(self, model: Model) -> bool:
         raise NotImplementedError
 

@@ -13,6 +13,7 @@ def test_add_user():
         "name": "test_user",
         "email": "test@email.com",
     }
+    # вот эти части надо вынести в conftest
     start_mappers()
     create_all_tables(ENGINE)
     worker = SqlAlchemyUOW(DEFAULT_SESSION_FACTORY)
