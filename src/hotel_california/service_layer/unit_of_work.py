@@ -45,7 +45,7 @@ class FakeUnitOfWork(AbstractUOW):
         return self
 
 
-ENGINE = create_engine("sqlite://")
+ENGINE = create_engine("postgresql://test_db_user:123@db")
 DEFAULT_SESSION_FACTORY = sessionmaker(bind=ENGINE)
 
 
