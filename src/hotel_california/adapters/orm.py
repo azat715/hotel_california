@@ -1,6 +1,7 @@
-from hotel_california.domain.models import User
 from sqlalchemy import Boolean, Column, Integer, MetaData, String, Table
 from sqlalchemy.orm import registry
+
+from hotel_california.domain.models import User
 
 mapper_registry = registry()
 

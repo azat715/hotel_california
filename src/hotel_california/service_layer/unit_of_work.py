@@ -1,13 +1,17 @@
 from abc import ABC, abstractmethod
 
+from sqlalchemy import create_engine
+from sqlalchemy.orm import sessionmaker
+from sqlalchemy.orm.session import Session
+
 from hotel_california.adapters.repository import (
     AbstractRepository,
     FakeDb,
     UserRepository,
 )
-from sqlalchemy import create_engine
-from sqlalchemy.orm import sessionmaker
-from sqlalchemy.orm.session import Session
+from hotel_california.config import get_settings
+
+settings = get_settings()
 
 
 class AbstractUOW(ABC):
@@ -45,7 +49,7 @@ class FakeUnitOfWork(AbstractUOW):
         return self
 
 
-ENGINE = create_engine("postgresql://test_db_user:123@db")
+ENGINE = create_engine(settings.DB.url)
 DEFAULT_SESSION_FACTORY = sessionmaker(bind=ENGINE)
 
 

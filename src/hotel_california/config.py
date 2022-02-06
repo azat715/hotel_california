@@ -1,5 +1,4 @@
 from functools import lru_cache
-from typing import List
 
 from pydantic import BaseSettings
 
@@ -31,18 +30,15 @@ class Credentials(BaseSettings):
         }
 
 
-class DatabaseAsyncpg(BaseSettings):
+class DatabaseSqlalchemy(BaseSettings):
     """вот эту часть думаю можно менять чтобы добавить mysql"""
 
-    engine: str
+    dialect: str = "postgresql"
     credentials: Credentials = Credentials()
 
-    class Config:
-        fields = {
-            "engine": {
-                "env": "ENGINE",
-            },
-        }
+    @property
+    def url(self):
+        return f"{self.dialect}://{self.credentials.user}:{self.credentials.password}@{self.credentials.host}:{self.credentials.port}/{self.credentials.database}"
 
 
 class Security(BaseSettings):
@@ -53,7 +49,7 @@ class Security(BaseSettings):
 
 class Settings(BaseSettings):
     APP_NAME = "hotel_california"
-    DB: DatabaseAsyncpg = DatabaseAsyncpg()
+    DB: DatabaseSqlalchemy = DatabaseSqlalchemy()
     AUTH: Security = Security()
 
     class Config:

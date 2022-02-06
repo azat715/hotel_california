@@ -34,7 +34,6 @@ services:
       - config/db/.env
     volumes:
       - postgres_data:/var/lib/postgresql/data/
-      - ./config/db/fixture/:/fixture/
 
 volumes:
   postgres_data: null

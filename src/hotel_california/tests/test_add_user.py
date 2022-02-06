@@ -1,13 +1,11 @@
 import pytest
+
 from hotel_california.adapters.orm import create_all_tables, start_mappers
 from hotel_california.adapters.repository import UserRepository
 from hotel_california.domain.models import NonUniqEmail, User
 from hotel_california.service_layer.service.hotel import add_user
 from hotel_california.service_layer.unit_of_work import (
-    DEFAULT_SESSION_FACTORY,
-    ENGINE,
-    SqlAlchemyUOW,
-)
+    DEFAULT_SESSION_FACTORY, ENGINE, SqlAlchemyUOW)
 
 
 def test_add_user():

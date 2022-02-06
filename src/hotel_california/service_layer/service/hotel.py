@@ -1,8 +1,10 @@
 import enum
 from typing import List, Optional
 
-from hotel_california.domain.models import BookingDate, NonUniqEmail, Order, Room, User
-from hotel_california.service_layer.exceptions import RoomExistError, RoomNonFree
+from hotel_california.domain.models import (BookingDate, NonUniqEmail, Order,
+                                            Room, User)
+from hotel_california.service_layer.exceptions import (RoomExistError,
+                                                       RoomNonFree)
 from hotel_california.service_layer.unit_of_work import AbstractUOW
 
 

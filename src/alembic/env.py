@@ -1,9 +1,12 @@
 from logging.config import fileConfig
 
-from hotel_california.adapters.orm import metadata_obj
 from sqlalchemy import engine_from_config, pool
 
 from alembic import context
+from hotel_california.adapters.orm import metadata_obj
+from hotel_california.config import get_settings
+
+settings = get_settings()
 
 # this is the Alembic Config object, which provides
 # access to the values within the .ini file in use.
@@ -23,6 +26,8 @@ target_metadata = metadata_obj
 # can be acquired:
 # my_important_option = config.get_main_option("my_important_option")
 # ... etc.
+
+config.set_main_option("sqlalchemy.url", settings.DB.url)
 
 
 def run_migrations_offline():

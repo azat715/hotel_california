@@ -1,9 +1,10 @@
 from abc import ABC, abstractmethod
 from typing import Any, Dict, List, Optional
 
-from hotel_california.domain.models import Model, User
 from sqlalchemy import select
 from sqlalchemy.orm import Session
+
+from hotel_california.domain.models import Model, User
 
 
 class AbstractRepository(ABC):

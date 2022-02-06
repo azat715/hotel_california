@@ -1,14 +1,11 @@
 from fastapi import Depends, FastAPI
+
 from hotel_california.adapters.orm import create_all_tables, start_mappers
 from hotel_california.adapters.repository import UserRepository
 from hotel_california.domain.models import User
 from hotel_california.service_layer.service.hotel import add_user
 from hotel_california.service_layer.unit_of_work import (
-    DEFAULT_SESSION_FACTORY,
-    ENGINE,
-    AbstractUOW,
-    SqlAlchemyUOW,
-)
+    DEFAULT_SESSION_FACTORY, ENGINE, AbstractUOW, SqlAlchemyUOW)
 
 app = FastAPI()
 start_mappers()
