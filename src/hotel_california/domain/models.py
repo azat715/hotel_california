@@ -6,12 +6,6 @@ from pydantic import EmailStr
 from pydantic.dataclasses import dataclass
 
 
-class NonUniqEmail(Exception):
-    def __init__(self, email: str):
-        message = f"Email {email} должен быть уникальным"
-        super().__init__(message)
-
-
 class Model(ABC):
     pass
 
