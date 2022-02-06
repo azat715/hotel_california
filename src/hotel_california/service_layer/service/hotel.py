@@ -1,9 +1,20 @@
 import enum
 from typing import List, Optional
 
-from hotel_california.domain.models import BookingDate, Order, Room, User
+from jose import jwt
+from jose.exceptions import ExpiredSignatureError, JWTClaimsError, JWTError
+
+from hotel_california.domain.models import (
+    ALGORITHM,
+    SECRET_KEY,
+    BookingDate,
+    Order,
+    Room,
+    User,
+    UserManager,
+)
 from hotel_california.service_layer.exceptions import (
-    NonUniqEmail,
+    AuthenticationJwtError,
     RoomExistError,
     RoomNonFree,
 )
@@ -17,10 +28,32 @@ class Status(enum.IntEnum):
 
 def add_user(user: User, workers: AbstractUOW):
     with workers as worker:
-        if user.email in [i[0].email for i in worker.data.all()]:
-            raise NonUniqEmail(user.email)
-        worker.data.add(user)
+        manager = UserManager.init(worker.data.all())
+        u = manager.create(user)
+        worker.data.add(u)
         worker.commit()
+
+
+def login_user(email: str, password: str, workers: AbstractUOW):
+    with workers as worker:
+        manager = UserManager.init(worker.data.all())
+        manager.login(email, password)
+
+
+def decode_token(token: str, audience: Optional[str] = None) -> dict:
+    try:
+        return jwt.decode(
+            token,
+            SECRET_KEY,
+            algorithms=[ALGORITHM],
+            audience=audience,
+        )
+    except ExpiredSignatureError as err:
+        message = "Expiry time not valid"
+        raise AuthenticationJwtError(message) from err
+    except (JWTError, JWTClaimsError) as err:
+        message = "Invalid jwt"
+        raise AuthenticationJwtError(message) from err
 
 
 def add_room(number: int, capacity: int, price: float, workers: AbstractUOW):

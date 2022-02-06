@@ -2,19 +2,23 @@ from fastapi import Depends, FastAPI, Request
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
 
-from hotel_california.adapters.orm import create_all_tables, start_mappers
-from hotel_california.adapters.repository import UserRepository
+from hotel_california.adapters.orm import start_mappers
+from hotel_california.config import get_settings
 from hotel_california.domain.models import User
-from hotel_california.service_layer.exceptions import BusinessLogicError
-from hotel_california.service_layer.service.hotel import add_user
-from hotel_california.service_layer.unit_of_work import (
-    DEFAULT_SESSION_FACTORY,
-    AbstractUOW,
-    SqlAlchemyUOW,
+from hotel_california.entrypoints.app.routers.auth import auth_router
+from hotel_california.entrypoints.app.workers import user_worker
+from hotel_california.service_layer.exceptions import (
+    AuthenticationError,
+    BusinessLogicError,
 )
+from hotel_california.service_layer.service.hotel import add_user
+from hotel_california.service_layer.unit_of_work import AbstractUOW
 
-app = FastAPI()
+settings = get_settings()
+app = FastAPI(title=settings.APP_NAME)
 start_mappers()
+
+app.include_router(auth_router)
 
 
 @app.exception_handler(BusinessLogicError)
@@ -33,8 +37,12 @@ async def validation_exception_handler(request, exc):
     )
 
 
-def user_worker():
-    return SqlAlchemyUOW(repo=UserRepository, session_factory=DEFAULT_SESSION_FACTORY)
+@app.exception_handler(AuthenticationError)
+async def authentication_exception_handler(request, exc):
+    return JSONResponse(
+        status_code=401,
+        content={"message": "Error! AuthenticationError", "body": str(exc)},
+    )
 
 
 @app.get("/test")
