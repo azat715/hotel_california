@@ -9,8 +9,11 @@ from hotel_california.domain.models import (
     SECRET_KEY,
     BookingDate,
     Order,
+    RefreshToken,
     Room,
+    TokenResponse,
     User,
+    UserLoginSchema,
     UserManager,
 )
 from hotel_california.service_layer.exceptions import (
@@ -34,10 +37,17 @@ def add_user(user: User, workers: AbstractUOW):
         worker.commit()
 
 
-def login_user(email: str, password: str, workers: AbstractUOW):
+def login_user(data: UserLoginSchema, workers: AbstractUOW) -> TokenResponse:
     with workers as worker:
         manager = UserManager.init(worker.data.all())
-        manager.login(email, password)
+        user = manager.login(data.email, data.password)
+        access_token = manager.get_access_token(user.email)
+        refresh_token = manager.get_refresh_token(user.email)
+        token = RefreshToken(value=refresh_token)
+        user.token = token
+        worker.data.add(user)
+        worker.commit()
+        return TokenResponse(access=access_token, refresh=refresh_token)
 
 
 def decode_token(token: str, audience: Optional[str] = None) -> dict:

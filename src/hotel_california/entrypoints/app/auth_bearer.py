@@ -1,10 +1,10 @@
 from fastapi import Depends
 from fastapi.security import OAuth2PasswordBearer
 
-from hotel_california.domain.models import AUDIENCE
+from hotel_california.domain.models import AUDIENCE, LOGIN_URL
 from hotel_california.service_layer.service.hotel import decode_token
 
-oauth2_scheme = OAuth2PasswordBearer(tokenUrl="api/user/login")
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl=LOGIN_URL)
 
 
 async def validate_token(token: str = Depends(oauth2_scheme)) -> dict:

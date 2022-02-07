@@ -19,7 +19,8 @@ from hotel_california.service_layer.exceptions import (
 settings = get_settings()
 
 APP_NAME = settings.APP_NAME
-AUDIENCE = "/api/token/refresh/"
+AUDIENCE = "/users/token/refresh/"
+LOGIN_URL = "users/login"
 SECRET_KEY = settings.AUTH.SECRET_KEY
 ALGORITHM = settings.AUTH.ALGORITHM
 ACCESS_TOKEN_EXPIRE_MINUTES = settings.AUTH.ACCESS_TOKEN_EXPIRE_MINUTES
@@ -28,6 +29,20 @@ REFRESH_TOKEN_EXPIRE_MINUTES = 4320  # время действия 3 дня
 
 class Model(ABC):
     pass
+
+
+@dataclass(unsafe_hash=True)
+class TokenResponse(Model):
+    access: str
+    refresh: str
+
+
+@dataclass(unsafe_hash=True)
+class UserLoginSchema(Model):
+    """логин пользователя"""
+
+    email: EmailStr
+    password: str
 
 
 @dataclass(unsafe_hash=True)
@@ -120,10 +135,11 @@ class UserManager:
         user.password = self._hash_password(user.password)
         return user
 
-    def login(self, email: str, password: str):
+    def login(self, email: str, password: str) -> User:
         u = self.exists(email=email)
-        if not self._check_credentials(password, u.email):
+        if not self._check_credentials(password, u.password):
             raise InvalidPassword(email=email)
+        return u
 
     def _get_token(
         self, email: str, expires_delta: int, audience: Optional[str] = None

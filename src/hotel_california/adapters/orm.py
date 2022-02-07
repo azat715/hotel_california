@@ -14,7 +14,9 @@ user = Table(
     Column("name", String()),
     # тут я не могу поставить unique=True чтобы проверить уникальность емайлов
     Column("email", String()),
+    Column("password", String()),
     Column("is_admin", Boolean),
+    
 )
 
 refresh_token = Table(
