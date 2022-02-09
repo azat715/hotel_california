@@ -14,7 +14,7 @@ from hotel_california.config import get_settings
 settings = get_settings()
 
 
-class AbstractUOW(ABC):
+class UOW(ABC):
     data: AbstractRepository
 
     @abstractmethod
@@ -34,7 +34,7 @@ class AbstractUOW(ABC):
             raise exc_val
 
 
-class FakeUnitOfWork(AbstractUOW):
+class FakeUnitOfWork(UOW):
     def __init__(self, db: AbstractRepository):
         self.data = db
         self.committed = False
@@ -53,7 +53,7 @@ ENGINE = create_engine(settings.DB.url)
 DEFAULT_SESSION_FACTORY = sessionmaker(bind=ENGINE)
 
 
-class SqlAlchemyUOW(AbstractUOW):
+class SqlAlchemyUOW(UOW):
     def __init__(
         self, repo: AbstractRepository, session_factory=DEFAULT_SESSION_FACTORY
     ):

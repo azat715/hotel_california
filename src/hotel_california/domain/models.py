@@ -1,6 +1,8 @@
+import enum
 from abc import ABC
+from dataclasses import field
 from datetime import date, datetime, timedelta
-from typing import Dict, List, Optional
+from typing import Dict, List, Optional, Tuple, Union
 
 from jose import jwt
 from passlib.context import CryptContext
@@ -14,6 +16,8 @@ from hotel_california.service_layer.exceptions import (
     NonUniqEmail,
     NotFoundEmail,
     UserNotAdmin,
+    RoomExistError,
+    RoomNonFree
 )
 
 settings = get_settings()
@@ -46,30 +50,62 @@ class UserLoginSchema(Model):
 
 
 @dataclass(unsafe_hash=True)
+class RoomFindSchema(Model):
+    """форма для поиска комнаты"""
+    capacity: int
+    arrival: datetime
+    departure: datetime
+
+
+class Status(enum.IntEnum):
+    ARRIVAL = 1
+    DEPARTURE = 2
+
+
+@dataclass(unsafe_hash=True)
+class BookingDate(Model):
+    date: date
+    status: Status  # ARRIVAL/DEPARTURE
+
+    @classmethod
+    def parse_str(cls, value: str, status: Status):
+        """парсинг даты
+
+        Args:
+            value: дата в ISO формате YYYY-MM-DD
+            status: Status enum - ARRIVAL/DEPARTURE
+
+        Raises:
+            ValueError - Invalid isoformat string
+
+        Returns:
+            BookingDate
+        """
+        return cls(date=date.fromisoformat(value), status=status)
+
+
+@dataclass(unsafe_hash=True)
+class Order(Model):
+    guest: str
+    # даты желаемого заезда и выезда
+    dates: List[BookingDate] = field(default_factory=list)
+
+    def __post_init__(self):
+        assert len(self.dates) == 2, "Две даты в ордере"
+
+
+@dataclass(unsafe_hash=True)
 class Room(Model):
     """комната"""
 
     number: int  # номер комнаты, уникальный
     capacity: int
     price: float
+    orders: List[Order] = field(default_factory=list)
 
     def __post_init__(self):
         assert self.capacity > 0, "Bместительность capacity должно быть больше нуля"
         assert self.price > 0, "Цена price должна быть больше нуля"
-
-
-@dataclass(unsafe_hash=True)
-class BookingDate(Model):
-    date: date
-    status: int  # ARRIVAL/DEPARTURE
-
-
-@dataclass(unsafe_hash=True)
-class Order(Model):
-    # даты желаемого заезда и выезда
-    dates: List[BookingDate]
-    room: Optional[Room] = None
-    booking: bool = False  # признак бронирования
 
 
 @dataclass(unsafe_hash=True)
@@ -96,6 +132,7 @@ PasswordContext = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
 
 class UserManager:
+    """что то типа агрегата чтоли"""
     APP_NAME = APP_NAME
     AUDIENCE = AUDIENCE
     SECRET_KEY = SECRET_KEY
@@ -142,7 +179,7 @@ class UserManager:
         return u
 
     def _get_token(
-        self, email: str, expires_delta: int, audience: Optional[str] = None
+            self, email: str, expires_delta: int, audience: Optional[str] = None
     ) -> str:
         payload = {
             "iss": self.APP_NAME,
@@ -153,19 +190,89 @@ class UserManager:
             payload["aud"] = audience
         return jwt.encode(payload, self.SECRET_KEY, algorithm=self.ALGORITHM)
 
-    def get_access_token(self, email: str) -> str:
+    def _get_access_token(self, email: str) -> str:
         return self._get_token(email, expires_delta=self.ACCESS_TOKEN_EXPIRE_MINUTES)
 
-    def get_refresh_token(self, email: str) -> str:
+    def _get_refresh_token(self, email: str) -> str:
         return self._get_token(
             email,
             expires_delta=self.REFRESH_TOKEN_EXPIRE_MINUTES,
             audience=self.AUDIENCE,
         )
 
+    def get_tokens(self, email: str) -> TokenResponse:
+        access = self._get_access_token(email)
+        refresh = self._get_refresh_token(email)
+        return TokenResponse(access=access, refresh=refresh)
+
+    def get_user_by_email(self, email: str) -> User:
+        self.exists(email=email)
+        return self.users[email]
+
     @classmethod
     def init(cls, users: List[User]) -> "UserManager":
         res = {}
         for user in [i[0] for i in users]:
             res[user.email] = user
+        return cls(res)
+
+
+class RoomManager:
+    """что то типа агрегата чтоли"""
+
+    def __init__(self, rooms: Dict[int, Room]) -> None:
+        self.rooms = rooms
+
+    def _validate(self, number: int) -> bool:
+        if number in self.rooms:
+            raise RoomExistError(number)
+
+    @staticmethod
+    def _check_free_room(dates: Tuple[BookingDate, BookingDate], room: Room) -> bool:
+        """проверка свободна ли комната
+
+        Args:
+            test_dates tuple): кортеж дат прибытия/убытия
+            room: комната
+
+        Return:
+            True - свободна
+            False - занята
+
+        Raises:
+            RoomNonFree: Если комната не свободна то RoomNonFree
+        """
+        res = []
+        res.extend(dates)
+        # добавляю существующие брони
+        res.extend(i.dates for i in room.orders)
+        # сортирую по времени
+        res.sort(key=lambda x: x.date)
+        # если идут два подряд заезда/выезда ошибка
+        while res:
+            first = res.pop(0)
+            second = res.pop(0)
+            if second.status == first.status:
+                return False
+        return True
+
+    def create(self, room: Room) -> Room:
+        self._validate(room.number)
+        return room
+
+    def find_room(self, dates: Tuple[BookingDate, BookingDate], cap: int) -> List[Room]:
+        rooms = [i for i in self.rooms.values() if i.capacity == cap]
+        res = []
+        for room in rooms:
+            if self._check_free_room(dates, room):
+                res.append(room)
+        return res
+        
+        # Поиск номера (указываем даты и количество мест, возвращаем список (номер, вместительность, цена)
+
+    @classmethod
+    def init(cls, rooms: List[Room]) -> "RoomManager":
+        res = {}
+        for room in [i[0] for i in rooms]:
+            res[room.number] = room
         return cls(res)

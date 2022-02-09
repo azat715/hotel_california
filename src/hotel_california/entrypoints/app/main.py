@@ -1,18 +1,22 @@
+from datetime import date
+
 from fastapi import Depends, FastAPI, Request
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
+from pydantic import BaseModel
 
 from hotel_california.adapters.orm import start_mappers
 from hotel_california.config import get_settings
-from hotel_california.domain.models import User
+from hotel_california.domain.models import User, Room, Order, BookingDate, Status
+from hotel_california.entrypoints.app.auth_bearer import check_admin
 from hotel_california.entrypoints.app.routers.auth import auth_router
-from hotel_california.entrypoints.app.workers import user_worker
+from hotel_california.entrypoints.app.workers import user_worker, room_worker
 from hotel_california.service_layer.exceptions import (
     AuthenticationError,
     BusinessLogicError,
 )
-from hotel_california.service_layer.service.hotel import add_user
-from hotel_california.service_layer.unit_of_work import AbstractUOW
+from hotel_california.service_layer.service.hotel import add_user, add_room
+from hotel_california.service_layer.unit_of_work import UOW
 
 settings = get_settings()
 app = FastAPI(title=settings.APP_NAME)
@@ -50,14 +54,27 @@ async def test():
     return {"message": "Hello World"}
 
 
-@app.post("/users")
-async def add_user_endpoint(user: User, worker: AbstractUOW = Depends(user_worker)):
+@app.post("/users", dependencies=[Depends(check_admin)])
+async def add_user_endpoint(
+    user: User,
+    worker: UOW = Depends(user_worker),
+):
     add_user(user, workers=worker)
 
 
+
+
+class Item(BaseModel):
+    number: int  # номер комнаты, уникальный
+    capacity: int
+    price: float
+
+
 @app.post("/rooms")
-async def add_room():
-    pass
+async def add_room_endpoint(item: Item, worker: UOW = Depends(room_worker)):
+    dates = [BookingDate(date=(date.fromisoformat('2019-12-04')), status=Status.ARRIVAL), BookingDate(date=(date.fromisoformat('2019-12-04')), status=Status.DEPARTURE)]
+    room = Room(1, 1, 100, orders=[Order(guest="test", dates=dates)])
+    add_room(room, workers=worker)
 
 
 @app.get("/rooms")

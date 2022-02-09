@@ -14,22 +14,18 @@ from hotel_california.domain.models import (
     TokenResponse,
     User,
     UserLoginSchema,
-    UserManager,
+    UserManager, RoomManager, Status,
 )
 from hotel_california.service_layer.exceptions import (
     AuthenticationJwtError,
     RoomExistError,
     RoomNonFree,
+    UserNotAdmin,
 )
-from hotel_california.service_layer.unit_of_work import AbstractUOW
+from hotel_california.service_layer.unit_of_work import UOW
 
 
-class Status(enum.IntEnum):
-    ARRIVAL = 1
-    DEPARTURE = 2
-
-
-def add_user(user: User, workers: AbstractUOW):
+def add_user(user: User, workers: UOW):
     with workers as worker:
         manager = UserManager.init(worker.data.all())
         u = manager.create(user)
@@ -37,17 +33,47 @@ def add_user(user: User, workers: AbstractUOW):
         worker.commit()
 
 
-def login_user(data: UserLoginSchema, workers: AbstractUOW) -> TokenResponse:
+def login_user(data: UserLoginSchema, workers: UOW) -> TokenResponse:
     with workers as worker:
         manager = UserManager.init(worker.data.all())
         user = manager.login(data.email, data.password)
-        access_token = manager.get_access_token(user.email)
-        refresh_token = manager.get_refresh_token(user.email)
-        token = RefreshToken(value=refresh_token)
-        user.token = token
+        token = manager.get_tokens(user.email)
+        user.token = RefreshToken(value=token.refresh)
         worker.data.add(user)
         worker.commit()
-        return TokenResponse(access=access_token, refresh=refresh_token)
+        return token
+
+
+# def get_tokens(email: str, workers: AbstractUOW) -> TokenResponse:
+#     with workers as worker:
+#         manager = UserManager.init(worker.data.all())
+#         user = manager.get_user_by_email(email)
+#         token = manager.get_tokens(user.email)
+#         user.token = RefreshToken(value=token.refresh)
+#         worker.data.add(user)
+#         worker.commit()
+
+
+def check_is_admin(email: str, workers: UOW) -> bool:
+    with workers as worker:
+        manager = UserManager.init(worker.data.all())
+        user = manager.get_user_by_email(email)
+        if not user.is_admin:
+            raise UserNotAdmin(email=email)
+
+
+def refresh_token(email: str, workers: UOW) -> TokenResponse:
+    with workers as worker:
+        manager = UserManager.init(worker.data.all())
+        user = manager.get_user_by_email(email)
+        if not user.token:
+            message = "Refresh token alredy used"
+            raise AuthenticationJwtError(message)
+        token = manager.get_tokens(user.email)
+        user.token = RefreshToken(value=token.refresh)
+        worker.data.add(user)
+        worker.commit()
+        return token
 
 
 def decode_token(token: str, audience: Optional[str] = None) -> dict:
@@ -66,67 +92,48 @@ def decode_token(token: str, audience: Optional[str] = None) -> dict:
         raise AuthenticationJwtError(message) from err
 
 
-def add_room(number: int, capacity: int, price: float, workers: AbstractUOW):
+def add_room(room: Room, workers: UOW) -> None:
     """добавление комнаты"""
     with workers as worker:
-        room = Room(number=number, capacity=capacity, price=price)
-        if worker.data.exists(room):
-            raise RoomExistError(number)
-        worker.data.add(room)
+        manager = RoomManager.init(worker.data.all())
+        u = manager.create(room)
+        worker.data.add(u)
         worker.commit()
 
 
-def get_room_by_cap(cap: int, workers: AbstractUOW) -> List[Room]:
-    """список комнат с вместимостью cap"""
-    return workers.data.filter({"capacity": cap})
+# def get_room_by_cap(cap: int, workers: UOW) -> List[Room]:
+#     """список комнат с вместимостью cap"""
+#     return workers.data.filter({"capacity": cap})
+#
+#
+# def get_room_by_num(room_number: int, workers: UOW) -> Optional[Room]:
+#     """комната по номеру"""
+#     return workers.data.get({"number": room_number})
+#
+#
+# def get_room_bookings_by_num(num: int, workers: UOW) -> List[BookingDate]:
+#     return [i.dates for i in workers.data.filter({"room_num": num})]
+
+def find_room(cap: int, arrival: str, departure: str, workers: UOW) -> List[Room]:
+    with workers as worker:
+        manager = RoomManager.init(worker.data.all())
+        dates = (BookingDate.parse_str(arrival, Status.ARRIVAL), BookingDate.parse_str(departure, Status.DEPARTURE))
+        return manager.find_room(dates, cap)
 
 
-def get_room_by_num(room_number: int, workers: AbstractUOW) -> Optional[Room]:
-    """комната по номеру"""
-    return workers.data.get({"number": room_number})
+# def check_free_rooms(rooms: List[Room], dates: tuple[BookingDate]) -> List[Room]:
+#     free_rooms = []
+#     for room in rooms:
+#         try:
+#             check_free_room(room, dates)
+#         except RoomNonFree:
+#             pass
+#         else:
+#             free_rooms.append(room)
+#     return free_rooms
 
 
-def get_room_bookings_by_num(num: int, workers: AbstractUOW) -> List[BookingDate]:
-    return [i.dates for i in workers.data.filter({"room_num": num})]
-
-
-def check_free_room(test_dates: tuple[BookingDate], dates: List[BookingDate]):
-    """проверка свободна ли комната
-
-    Args:
-        test_dates tuple): кортеж дат прибытия/убытия
-        dates (List[BookingDate]): кортеж дат прибытия/убытия существующих заказов
-
-    Raises:
-        RoomNonFree: Если комната не свобода то RoomNonFree
-    """
-
-    # добавляю существующие брони
-    dates.extend(test_dates)
-    # сортирую по времени
-    dates.sort(key=lambda x: x.date)
-    # если идут два подряд заезда/выезда ошибка
-
-    while dates:
-        first = dates.pop(0)
-        second = dates.pop(0)
-        if second.status == first.status:
-            raise RoomNonFree()
-
-
-def check_free_rooms(rooms: List[Room], dates: tuple[BookingDate]) -> List[Room]:
-    free_rooms = []
-    for room in rooms:
-        try:
-            check_free_room(room, dates)
-        except RoomNonFree:
-            pass
-        else:
-            free_rooms.append(room)
-    return free_rooms
-
-
-def booking_room(room: Room, dates: tuple[BookingDate], workers: AbstractUOW):
+def booking_room(room: Room, dates: tuple[BookingDate], workers: UOW):
     with workers as worker:
         order = Order(dates, room, booking=True)
         worker.data.add(order)

@@ -4,7 +4,7 @@ from typing import Any, Dict, List, Optional
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from hotel_california.domain.models import Model, User
+from hotel_california.domain.models import Model, User, Room
 
 
 class AbstractRepository(ABC):
@@ -72,4 +72,15 @@ class UserRepository(AbstractRepository):
 
     def all(self) -> List[Model]:
         statement = select(User)
+        return self.session.execute(statement).all()
+
+
+class RoomRepository(UserRepository):
+
+    def get(self, number: int) -> Optional[Room]:
+        statement = select(Room).filter_by(number=number)
+        return self.session.execute(statement).one()
+
+    def all(self) -> List[Model]:
+        statement = select(Room)
         return self.session.execute(statement).all()
