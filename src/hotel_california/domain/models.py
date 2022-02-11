@@ -8,7 +8,9 @@ from jose import jwt
 from passlib.context import CryptContext
 from pydantic import EmailStr  # pylint: disable=no-name-in-module
 from pydantic import validator
-from pydantic.dataclasses import dataclass
+from pydantic.dataclasses import dataclass # pydantic dataclasses неправильно мапятся алхимией при relationship один к многим -AttributeError: 'list' object has no attribute '_sa_adapter
+
+from dataclasses import dataclass as stdlib_dataclass
 
 from hotel_california.config import get_settings
 from hotel_california.service_layer.exceptions import (
@@ -84,16 +86,18 @@ class BookingDate(Model):
         return cls(date=date.fromisoformat(value), status=status)
 
 
+#@stdlib_dataclass(unsafe_hash=True)
 @dataclass(unsafe_hash=True)
 class Order(Model):
     guest: str
     # даты желаемого заезда и выезда
-    dates: List[BookingDate] = field(default_factory=list)
+    # dates: List[BookingDate] = field(default_factory=list)
 
-    def __post_init__(self):
-        assert len(self.dates) == 2, "Две даты в ордере"
+    # def __post_init__(self):
+    #     assert len(self.dates) == 2, "Две даты в ордере"
 
 
+#@stdlib_dataclass(unsafe_hash=True)
 @dataclass(unsafe_hash=True)
 class Room(Model):
     """комната"""
@@ -103,9 +107,9 @@ class Room(Model):
     price: float
     orders: List[Order] = field(default_factory=list)
 
-    def __post_init__(self):
-        assert self.capacity > 0, "Bместительность capacity должно быть больше нуля"
-        assert self.price > 0, "Цена price должна быть больше нуля"
+    # def __post_init__(self):
+    #     assert self.capacity > 0, "Bместительность capacity должно быть больше нуля"
+    #     assert self.price > 0, "Цена price должна быть больше нуля"
 
 
 @dataclass(unsafe_hash=True)
@@ -223,7 +227,7 @@ class RoomManager:
     def __init__(self, rooms: Dict[int, Room]) -> None:
         self.rooms = rooms
 
-    def _validate(self, number: int) -> bool:
+    def _validate(self, number: int):
         if number in self.rooms:
             raise RoomExistError(number)
 

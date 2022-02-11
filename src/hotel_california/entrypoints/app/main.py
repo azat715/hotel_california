@@ -72,8 +72,7 @@ class Item(BaseModel):
 
 @app.post("/rooms")
 async def add_room_endpoint(item: Item, worker: UOW = Depends(room_worker)):
-    dates = [BookingDate(date=(date.fromisoformat('2019-12-04')), status=Status.ARRIVAL), BookingDate(date=(date.fromisoformat('2019-12-04')), status=Status.DEPARTURE)]
-    room = Room(1, 1, 100, orders=[Order(guest="test", dates=dates)])
+    room = Room(2, 1, 100, orders=[Order(guest="test")])
     add_room(room, workers=worker)
 
 

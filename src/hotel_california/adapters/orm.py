@@ -29,7 +29,7 @@ refresh_token = Table(
     Column("value", String),
 )
 
-room = Table(
+rooms = Table(
     "rooms",
     metadata_obj,
     Column("id", Integer, primary_key=True),
@@ -39,20 +39,11 @@ room = Table(
 )
 
 order = Table(
-    "orders",
+    "order",
     metadata_obj,
     Column("id", Integer, primary_key=True),
     Column("room_id", Integer, ForeignKey("rooms.id")),
     Column("guest", String)
-)
-
-dates = Table(
-    "dates",
-    metadata_obj,
-    Column("id", Integer, primary_key=True),
-    Column("order_id", Integer, ForeignKey("orders.id")),
-    Column("date", Date),
-    Column("status", Enum(Status))
 )
 
 
@@ -64,16 +55,11 @@ def start_mappers():
     )
     mapper_registry.map_imperatively(RefreshToken, refresh_token)
 
-    mapper_registry.map_imperatively(Room,
-                                     room,
-                                     properties={"orders": relationship(Order, uselist=True)})
-
-    mapper_registry.map_imperatively(Order, order, properties={
-        "dates": relationship(BookingDate, uselist=True),
-    })
-
-    mapper_registry.map_imperatively(BookingDate, dates)
-
+    mapper_registry.map_imperatively(
+        Room,
+        rooms,
+        properties={"orders": relationship(Order, backref="room")})
+    mapper_registry.map_imperatively(Order, order)
 
 def create_all_tables(engine):
     metadata_obj.create_all(engine)
