@@ -6,3 +6,9 @@ build:
 
 up:
 	docker-compose up -d
+
+migrate:
+	docker-compose exec backend alembic upgrade head
+
+shell:
+	docker-compose exec backend ipython -i -m hotel_california.entrypoints.commands.shell

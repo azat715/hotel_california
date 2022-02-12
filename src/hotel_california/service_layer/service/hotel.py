@@ -1,5 +1,5 @@
 import enum
-from typing import List, Optional
+from typing import List, Optional, Tuple
 
 from jose import jwt
 from jose.exceptions import ExpiredSignatureError, JWTClaimsError, JWTError
@@ -11,9 +11,7 @@ from hotel_california.domain.models import (
     Order,
     RefreshToken,
     Room,
-    TokenResponse,
     User,
-    UserLoginSchema,
     UserManager, RoomManager, Status,
 )
 from hotel_california.service_layer.exceptions import (
@@ -25,23 +23,24 @@ from hotel_california.service_layer.exceptions import (
 from hotel_california.service_layer.unit_of_work import UOW
 
 
-def add_user(user: User, workers: UOW):
+def add_user(name: str, email: str, password: str, is_admin: bool, workers: UOW):
     with workers as worker:
         manager = UserManager.init(worker.data.all())
-        u = manager.create(user)
+        u = manager.create(name, email, password, is_admin)
         worker.data.add(u)
         worker.commit()
 
 
-def login_user(data: UserLoginSchema, workers: UOW) -> TokenResponse:
+def login_user(email: str, password: str, workers: UOW) -> Tuple[str, str]:
     with workers as worker:
         manager = UserManager.init(worker.data.all())
-        user = manager.login(data.email, data.password)
-        token = manager.get_tokens(user.email)
-        user.token = RefreshToken(value=token.refresh)
+        user = manager.login(email, password)
+        access = manager.get_access_token(email)
+        refresh = manager.get_refresh_token(email)
+        user.token = RefreshToken(value=refresh)
         worker.data.add(user)
         worker.commit()
-        return token
+        return access, refresh
 
 
 # def get_tokens(email: str, workers: AbstractUOW) -> TokenResponse:
@@ -62,18 +61,19 @@ def check_is_admin(email: str, workers: UOW) -> bool:
             raise UserNotAdmin(email=email)
 
 
-def refresh_token(email: str, workers: UOW) -> TokenResponse:
+def refresh_token(email: str, workers: UOW) -> Tuple[str, str]:
     with workers as worker:
         manager = UserManager.init(worker.data.all())
         user = manager.get_user_by_email(email)
         if not user.token:
             message = "Refresh token alredy used"
             raise AuthenticationJwtError(message)
-        token = manager.get_tokens(user.email)
-        user.token = RefreshToken(value=token.refresh)
+        access = manager.get_access_token(user.email)
+        refresh = manager.get_refresh_token(user.email)
+        user.token = RefreshToken(value=refresh)
         worker.data.add(user)
         worker.commit()
-        return token
+        return access, refresh
 
 
 def decode_token(token: str, audience: Optional[str] = None) -> dict:

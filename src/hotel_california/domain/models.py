@@ -1,26 +1,26 @@
 import enum
 from abc import ABC
-from dataclasses import field
+from dataclasses import dataclass, field
 from datetime import date, datetime, timedelta
 from typing import Dict, List, Optional, Tuple, Union
 
+from email_validator import EmailNotValidError, validate_email
 from jose import jwt
 from passlib.context import CryptContext
-from pydantic import EmailStr  # pylint: disable=no-name-in-module
-from pydantic import validator
-from pydantic.dataclasses import dataclass # pydantic dataclasses неправильно мапятся алхимией при relationship один к многим -AttributeError: 'list' object has no attribute '_sa_adapter
-
-from dataclasses import dataclass as stdlib_dataclass
+from pydantic import BaseModel, EmailStr
 
 from hotel_california.config import get_settings
 from hotel_california.service_layer.exceptions import (
     InvalidPassword,
     NonUniqEmail,
     NotFoundEmail,
-    UserNotAdmin,
     RoomExistError,
-    RoomNonFree
+    RoomNonFree,
+    UserNotAdmin,
 )
+
+# from pydantic.dataclasses import dataclass # pydantic dataclasses неправильно мапятся алхимией при relationship один к многим -AttributeError: 'list' object has no attribute '_sa_adapter
+
 
 settings = get_settings()
 
@@ -35,28 +35,6 @@ REFRESH_TOKEN_EXPIRE_MINUTES = 4320  # время действия 3 дня
 
 class Model(ABC):
     pass
-
-
-@dataclass(unsafe_hash=True)
-class TokenResponse(Model):
-    access: str
-    refresh: str
-
-
-@dataclass(unsafe_hash=True)
-class UserLoginSchema(Model):
-    """логин пользователя"""
-
-    email: EmailStr
-    password: str
-
-
-@dataclass(unsafe_hash=True)
-class RoomFindSchema(Model):
-    """форма для поиска комнаты"""
-    capacity: int
-    arrival: datetime
-    departure: datetime
 
 
 class Status(enum.IntEnum):
@@ -86,18 +64,16 @@ class BookingDate(Model):
         return cls(date=date.fromisoformat(value), status=status)
 
 
-#@stdlib_dataclass(unsafe_hash=True)
 @dataclass(unsafe_hash=True)
 class Order(Model):
     guest: str
     # даты желаемого заезда и выезда
-    # dates: List[BookingDate] = field(default_factory=list)
+    dates: List[BookingDate] = field(default_factory=list)
 
-    # def __post_init__(self):
-    #     assert len(self.dates) == 2, "Две даты в ордере"
+    def __post_init__(self):
+        assert len(self.dates) == 2, "Две даты в ордере"
 
 
-#@stdlib_dataclass(unsafe_hash=True)
 @dataclass(unsafe_hash=True)
 class Room(Model):
     """комната"""
@@ -107,9 +83,9 @@ class Room(Model):
     price: float
     orders: List[Order] = field(default_factory=list)
 
-    # def __post_init__(self):
-    #     assert self.capacity > 0, "Bместительность capacity должно быть больше нуля"
-    #     assert self.price > 0, "Цена price должна быть больше нуля"
+    def __post_init__(self):
+        assert self.capacity > 0, "Bместительность capacity должно быть больше нуля"
+        assert self.price > 0, "Цена price должна быть больше нуля"
 
 
 @dataclass(unsafe_hash=True)
@@ -120,16 +96,19 @@ class RefreshToken(Model):
 @dataclass(unsafe_hash=True)
 class User(Model):
     name: str
-    email: EmailStr  # должно быть уникальным
+    email: str  # должно быть уникальным
     password: str  # hash пароля
-    token: Optional[RefreshToken] = None
     is_admin: bool = False
+    token: Optional[RefreshToken] = None
 
-    @validator("password", pre=True, always=True)
-    def len_password_(cls, v):  # pylint: disable=no-self-argument
-        if len(v) < 8:
+    def __post_init__(self):
+        if len(self.password) < 8:
             raise ValueError("Длина пароля меньше 8 символов")
-        return v
+        try:
+            valid = validate_email(self.email)
+            self.email = valid.email
+        except EmailNotValidError as err:
+            raise err
 
 
 PasswordContext = CryptContext(schemes=["bcrypt"], deprecated="auto")
@@ -137,6 +116,7 @@ PasswordContext = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
 class UserManager:
     """что то типа агрегата чтоли"""
+
     APP_NAME = APP_NAME
     AUDIENCE = AUDIENCE
     SECRET_KEY = SECRET_KEY
@@ -171,10 +151,10 @@ class UserManager:
             return False
         return True
 
-    def create(self, user: User) -> User:
-        self._validate(user.email)
-        user.password = self._hash_password(user.password)
-        return user
+    def create(self, name: str, email: str, password: str, is_admin: bool = False) -> User:
+        self._validate(email)
+        password = self._hash_password(password)
+        return User(name, email, password, is_admin)
 
     def login(self, email: str, password: str) -> User:
         u = self.exists(email=email)
@@ -194,20 +174,15 @@ class UserManager:
             payload["aud"] = audience
         return jwt.encode(payload, self.SECRET_KEY, algorithm=self.ALGORITHM)
 
-    def _get_access_token(self, email: str) -> str:
+    def get_access_token(self, email: str) -> str:
         return self._get_token(email, expires_delta=self.ACCESS_TOKEN_EXPIRE_MINUTES)
 
-    def _get_refresh_token(self, email: str) -> str:
+    def get_refresh_token(self, email: str) -> str:
         return self._get_token(
             email,
             expires_delta=self.REFRESH_TOKEN_EXPIRE_MINUTES,
             audience=self.AUDIENCE,
         )
-
-    def get_tokens(self, email: str) -> TokenResponse:
-        access = self._get_access_token(email)
-        refresh = self._get_refresh_token(email)
-        return TokenResponse(access=access, refresh=refresh)
 
     def get_user_by_email(self, email: str) -> User:
         self.exists(email=email)
@@ -271,7 +246,7 @@ class RoomManager:
             if self._check_free_room(dates, room):
                 res.append(room)
         return res
-        
+
         # Поиск номера (указываем даты и количество мест, возвращаем список (номер, вместительность, цена)
 
     @classmethod

@@ -39,11 +39,20 @@ rooms = Table(
 )
 
 order = Table(
-    "order",
+    "orders",
     metadata_obj,
     Column("id", Integer, primary_key=True),
     Column("room_id", Integer, ForeignKey("rooms.id")),
     Column("guest", String)
+)
+
+dates = Table(
+    "dates",
+    metadata_obj,
+    Column("id", Integer, primary_key=True),
+    Column("order_id", Integer, ForeignKey("orders.id")),
+    Column("date", Date),
+    Column("status", Enum(Status))
 )
 
 
@@ -59,7 +68,12 @@ def start_mappers():
         Room,
         rooms,
         properties={"orders": relationship(Order, backref="room")})
-    mapper_registry.map_imperatively(Order, order)
+    mapper_registry.map_imperatively(
+        Order,
+        order,
+        properties={"dates": relationship(BookingDate, backref="order")})
+    mapper_registry.map_imperatively(BookingDate, dates)
+
 
 def create_all_tables(engine):
     metadata_obj.create_all(engine)

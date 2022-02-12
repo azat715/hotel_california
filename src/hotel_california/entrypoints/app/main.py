@@ -7,15 +7,15 @@ from pydantic import BaseModel
 
 from hotel_california.adapters.orm import start_mappers
 from hotel_california.config import get_settings
-from hotel_california.domain.models import User, Room, Order, BookingDate, Status
-from hotel_california.entrypoints.app.auth_bearer import check_admin
+from hotel_california.domain.models import BookingDate, Order, Room, Status, User
+
 from hotel_california.entrypoints.app.routers.auth import auth_router
-from hotel_california.entrypoints.app.workers import user_worker, room_worker
+from hotel_california.entrypoints.app.workers import room_worker, user_worker
 from hotel_california.service_layer.exceptions import (
     AuthenticationError,
     BusinessLogicError,
 )
-from hotel_california.service_layer.service.hotel import add_user, add_room
+from hotel_california.service_layer.service.hotel import add_room, add_user
 from hotel_california.service_layer.unit_of_work import UOW
 
 settings = get_settings()
@@ -52,16 +52,6 @@ async def authentication_exception_handler(request, exc):
 @app.get("/test")
 async def test():
     return {"message": "Hello World"}
-
-
-@app.post("/users", dependencies=[Depends(check_admin)])
-async def add_user_endpoint(
-    user: User,
-    worker: UOW = Depends(user_worker),
-):
-    add_user(user, workers=worker)
-
-
 
 
 class Item(BaseModel):
