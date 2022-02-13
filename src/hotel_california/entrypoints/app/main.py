@@ -8,8 +8,8 @@ from pydantic import BaseModel
 from hotel_california.adapters.orm import start_mappers
 from hotel_california.config import get_settings
 from hotel_california.domain.models import BookingDate, Order, Room, Status, User
-
 from hotel_california.entrypoints.app.routers.auth import auth_router
+from hotel_california.entrypoints.app.routers.users import users_router
 from hotel_california.entrypoints.app.workers import room_worker, user_worker
 from hotel_california.service_layer.exceptions import (
     AuthenticationError,
@@ -23,6 +23,7 @@ app = FastAPI(title=settings.APP_NAME)
 start_mappers()
 
 app.include_router(auth_router)
+app.include_router(users_router)
 
 
 @app.exception_handler(BusinessLogicError)
