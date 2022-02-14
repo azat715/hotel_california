@@ -1,6 +1,6 @@
-from datetime import datetime
+from datetime import datetime, date
 
-from pydantic import BaseModel, EmailStr
+from pydantic import BaseModel, EmailStr, PositiveInt, PositiveFloat
 
 
 class RoomFindSchema(BaseModel):
@@ -28,3 +28,22 @@ class UserForm(BaseModel):
     email: str  # должно быть уникальным
     password: str  # hash пароля
     is_admin: bool = False
+
+
+class RoomAddForm(BaseModel):
+    number: PositiveInt
+    capacity: PositiveInt
+    price: PositiveFloat
+
+
+class RoomResponse(BaseModel):
+    number: PositiveInt
+    capacity: PositiveInt
+    price: PositiveFloat
+
+
+class OrderResponse(BaseModel):
+    identity: int
+    arrival: date
+    departure: date
+

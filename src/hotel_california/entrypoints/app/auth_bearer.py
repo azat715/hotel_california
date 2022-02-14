@@ -2,7 +2,7 @@ from fastapi import Depends
 from fastapi.security import OAuth2PasswordBearer
 
 from hotel_california.domain.models import AUDIENCE, LOGIN_URL
-from hotel_california.entrypoints.app.workers import user_worker
+from hotel_california.entrypoints.app.workers import get_user_worker
 from hotel_california.service_layer.service.hotel import check_is_admin, decode_token
 from hotel_california.service_layer.unit_of_work import UOW
 
@@ -23,7 +23,7 @@ async def validate_refresh_token(token: str = Depends(oauth2_scheme)) -> dict:
 
 async def check_admin(
     payload: str = Depends(validate_token),
-    worker: UOW = Depends(user_worker),
+    worker: UOW = Depends(get_user_worker),
 ) -> dict:
     """проверка пользователя на админ"""
     email: str = payload.get("sub")

@@ -1,4 +1,4 @@
-import enum
+from datetime import date
 from typing import List, Optional, Tuple
 
 from jose import jwt
@@ -11,14 +11,11 @@ from hotel_california.domain.models import (
     Order,
     RefreshToken,
     Room,
-    User,
-    UserManager, RoomManager, Status,
+    UserManager, RoomManager, Status, OrderManager,
 )
 from hotel_california.service_layer.exceptions import (
     AuthenticationJwtError,
-    RoomExistError,
-    RoomNonFree,
-    UserNotAdmin,
+    UserNotAdmin, OrderNotCancel,
 )
 from hotel_california.service_layer.unit_of_work import UOW
 
@@ -41,16 +38,6 @@ def login_user(email: str, password: str, workers: UOW) -> Tuple[str, str]:
         worker.data.add(user)
         worker.commit()
         return access, refresh
-
-
-# def get_tokens(email: str, workers: AbstractUOW) -> TokenResponse:
-#     with workers as worker:
-#         manager = UserManager.init(worker.data.all())
-#         user = manager.get_user_by_email(email)
-#         token = manager.get_tokens(user.email)
-#         user.token = RefreshToken(value=token.refresh)
-#         worker.data.add(user)
-#         worker.commit()
 
 
 def check_is_admin(email: str, workers: UOW) -> bool:
@@ -92,49 +79,56 @@ def decode_token(token: str, audience: Optional[str] = None) -> dict:
         raise AuthenticationJwtError(message) from err
 
 
-def add_room(room: Room, workers: UOW) -> None:
+def add_room(number: int, capacity: int, price: float, workers: UOW) -> Room:
     """добавление комнаты"""
     with workers as worker:
         manager = RoomManager.init(worker.data.all())
-        u = manager.create(room)
-        worker.data.add(u)
+        room = manager.create(number, capacity, price)
+        worker.data.add(room)
         worker.commit()
+        return room
 
 
-# def get_room_by_cap(cap: int, workers: UOW) -> List[Room]:
-#     """список комнат с вместимостью cap"""
-#     return workers.data.filter({"capacity": cap})
-#
-#
-# def get_room_by_num(room_number: int, workers: UOW) -> Optional[Room]:
-#     """комната по номеру"""
-#     return workers.data.get({"number": room_number})
-#
-#
-# def get_room_bookings_by_num(num: int, workers: UOW) -> List[BookingDate]:
-#     return [i.dates for i in workers.data.filter({"room_num": num})]
+def get_order_by_id(order_id: int, workers: UOW) -> Order:
+    with workers as worker:
+        manager = OrderManager.init(worker.data.all())
+        return manager.get_order_by_id(order_id)
 
-def find_room(cap: int, arrival: str, departure: str, workers: UOW) -> List[Room]:
+
+def find_rooms(cap: int, arrival: str, departure: str, workers: UOW) -> List[Room]:
     with workers as worker:
         manager = RoomManager.init(worker.data.all())
         dates = (BookingDate.parse_str(arrival, Status.ARRIVAL), BookingDate.parse_str(departure, Status.DEPARTURE))
         return manager.find_room(dates, cap)
 
 
-# def check_free_rooms(rooms: List[Room], dates: tuple[BookingDate]) -> List[Room]:
-#     free_rooms = []
-#     for room in rooms:
-#         try:
-#             check_free_room(room, dates)
-#         except RoomNonFree:
-#             pass
-#         else:
-#             free_rooms.append(room)
-#     return free_rooms
-
-
-def booking_room(room: Room, dates: tuple[BookingDate], workers: UOW):
+def get_room_by_num(num: int, workers: UOW) -> Room:
     with workers as worker:
-        order = Order(dates, room, booking=True)
-        worker.data.add(order)
-        worker.commit()
+        manager = RoomManager.init(worker.data.all())
+        return manager.get_room_by_num(num)
+
+
+def check_room(num: int, arrival: date, departure: date, workers: UOW) -> Room:
+    with workers as worker:
+        manager = RoomManager.init(worker.data.all())
+        dates = (BookingDate.parse_str(arrival, Status.ARRIVAL), BookingDate.parse_str(departure, Status.DEPARTURE))
+        return manager.check_room(num, dates)
+
+
+def create_order(arrival: date, departure: date, workers: UOW):
+    with workers as worker:
+        manager = OrderManager.init(worker.data.all())
+        dates = (BookingDate.parse_str(arrival, Status.ARRIVAL), BookingDate.parse_str(departure, Status.DEPARTURE))
+        order = manager.create(dates)
+        return order
+
+
+def delete_order(order_id, workers: UOW):
+    with workers as worker:
+        manager = OrderManager.init(worker.data.all())
+        order = manager.get_order_by_id(order_id)
+        if manager.check_can_delete(order):
+            worker.data.delete(order)
+        else:
+            message = "Бронь можно отменить только за три дня до заезда"
+            raise OrderNotCancel(message)

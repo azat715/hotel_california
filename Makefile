@@ -9,6 +9,7 @@ up:
 
 migrate:
 	docker-compose exec backend alembic upgrade head
+	docker-compose exec backend python -m hotel_california.entrypoints.commands.add_user
 
 shell:
 	docker-compose exec backend ipython -i -m hotel_california.entrypoints.commands.shell

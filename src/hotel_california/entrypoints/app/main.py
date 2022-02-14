@@ -7,16 +7,15 @@ from pydantic import BaseModel
 
 from hotel_california.adapters.orm import start_mappers
 from hotel_california.config import get_settings
-from hotel_california.domain.models import BookingDate, Order, Room, Status, User
 from hotel_california.entrypoints.app.routers.auth import auth_router
 from hotel_california.entrypoints.app.routers.users import users_router
-from hotel_california.entrypoints.app.workers import room_worker, user_worker
+from hotel_california.entrypoints.app.routers.rooms import rooms_router
 from hotel_california.service_layer.exceptions import (
     AuthenticationError,
     BusinessLogicError,
 )
-from hotel_california.service_layer.service.hotel import add_room, add_user
-from hotel_california.service_layer.unit_of_work import UOW
+
+from hotel_california.entrypoints.app.auth_bearer import validate_token
 
 settings = get_settings()
 app = FastAPI(title=settings.APP_NAME)
@@ -24,6 +23,7 @@ start_mappers()
 
 app.include_router(auth_router)
 app.include_router(users_router)
+app.include_router(rooms_router)
 
 
 @app.exception_handler(BusinessLogicError)
@@ -55,50 +55,13 @@ async def test():
     return {"message": "Hello World"}
 
 
+@app.get("/test_auth", dependencies=[Depends(validate_token)])
+async def test_auth():
+    return {"message": "Hello World"}
+
+
 class Item(BaseModel):
     number: int  # номер комнаты, уникальный
     capacity: int
     price: float
 
-
-@app.post("/rooms")
-async def add_room_endpoint(item: Item, worker: UOW = Depends(room_worker)):
-    room = Room(2, 1, 100, orders=[Order(guest="test")])
-    add_room(room, workers=worker)
-
-
-@app.get("/rooms")
-async def find_room():
-    """Поиск номера
-
-    (указываем даты и количество мест,
-    возвращаем список (номер, вместительность, цена)"""
-
-
-@app.post("/booking")
-async def booking_room():
-    """Забронировать номер
-
-    (указываем номер, дата заезда, дата отъезда, возвращаем номер брони)"""
-
-
-@app.get("/booking")
-async def get_booking():
-    """Получить информацию по брони
-
-    (указываем номер брони, возвращаем дату заезда и дату отъезда)
-    """
-
-
-@app.get("/booking")
-async def booking_cancel():
-    """Снять бронь с номера
-
-    (указываем номер брони,"""
-
-
-@app.get("/booking")
-async def get_bookings():
-    """Показать даты на которые забронирована комната
-
-    (указываем номер комнаты, возвращаем список (номер брони, вместительность, цена)"""

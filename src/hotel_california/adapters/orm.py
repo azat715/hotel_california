@@ -43,7 +43,7 @@ order = Table(
     metadata_obj,
     Column("id", Integer, primary_key=True),
     Column("room_id", Integer, ForeignKey("rooms.id")),
-    Column("guest", String)
+    Column("identity", Integer)
 )
 
 dates = Table(

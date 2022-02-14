@@ -16,7 +16,7 @@ from hotel_california.service_layer.exceptions import (
     NotFoundEmail,
     RoomExistError,
     RoomNonFree,
-    UserNotAdmin,
+    UserNotAdmin, RoomNotFound, DatesNotValid, OrderNotFound,
 )
 
 # from pydantic.dataclasses import dataclass # pydantic dataclasses неправильно мапятся алхимией при relationship один к многим -AttributeError: 'list' object has no attribute '_sa_adapter
@@ -48,7 +48,7 @@ class BookingDate(Model):
     status: Status  # ARRIVAL/DEPARTURE
 
     @classmethod
-    def parse_str(cls, value: str, status: Status):
+    def parse_str(cls, value: date, status: Status):
         """парсинг даты
 
         Args:
@@ -61,12 +61,12 @@ class BookingDate(Model):
         Returns:
             BookingDate
         """
-        return cls(date=date.fromisoformat(value), status=status)
+        return cls(date=value, status=status)
 
 
 @dataclass(unsafe_hash=True)
 class Order(Model):
-    guest: str
+    identity: int
     # даты желаемого заезда и выезда
     dates: List[BookingDate] = field(default_factory=list)
 
@@ -224,9 +224,11 @@ class RoomManager:
         res = []
         res.extend(dates)
         # добавляю существующие брони
-        res.extend(i.dates for i in room.orders)
+        for i in room.orders:
+            res.extend(i.dates)
+        # res.extend([i.dates for i in room.orders])
         # сортирую по времени
-        res.sort(key=lambda x: x.date)
+        res = sorted(res, key=lambda x: x.date)
         # если идут два подряд заезда/выезда ошибка
         while res:
             first = res.pop(0)
@@ -235,9 +237,9 @@ class RoomManager:
                 return False
         return True
 
-    def create(self, room: Room) -> Room:
-        self._validate(room.number)
-        return room
+    def create(self, number: int, capacity: int, price: float) -> Room:
+        self._validate(number)
+        return Room(number, capacity, price)
 
     def find_room(self, dates: Tuple[BookingDate, BookingDate], cap: int) -> List[Room]:
         rooms = [i for i in self.rooms.values() if i.capacity == cap]
@@ -247,7 +249,19 @@ class RoomManager:
                 res.append(room)
         return res
 
+    def get_room_by_num(self, num: int):
+        try:
+            return self.rooms[num]
+        except KeyError as err:
+            raise RoomNotFound(num) from err
+
         # Поиск номера (указываем даты и количество мест, возвращаем список (номер, вместительность, цена)
+
+    def check_room(self, num: int, dates: Tuple[BookingDate, BookingDate]) -> int:
+        room = self.get_room_by_num(num)
+        if not self._check_free_room(dates, room):
+            raise RoomNonFree(num)
+        return room
 
     @classmethod
     def init(cls, rooms: List[Room]) -> "RoomManager":
@@ -255,3 +269,48 @@ class RoomManager:
         for room in [i[0] for i in rooms]:
             res[room.number] = room
         return cls(res)
+
+
+class OrderManager:
+    def __init__(self, orders: Dict[int, Order]):
+        self.orders = orders
+
+    def get_id(self) -> int:
+        """чтото типа автоинкремента pk"""
+        if self.orders:
+            return max(self.orders.keys()) + 1
+
+        return 1
+
+    @classmethod
+    def init(cls, orders: List[Order]) -> "OrderManager":
+        res = {}
+        for order in [i[0] for i in orders]:
+            res[order.identity] = order
+        return cls(res)
+
+    def create(self, dates: Tuple[BookingDate, BookingDate]) -> Order:
+        arrival, departure = dates
+        if arrival.date > departure.date:
+            message = "Дата прибытия позже чем дата убытия"
+            raise DatesNotValid(message)
+        order_id = self.get_id()
+        return Order(
+            identity=order_id,
+            dates=list(dates)
+        )
+
+    def get_order_by_id(self, order_id: int) -> Order:
+        try:
+            return self.orders[order_id]
+        except KeyError as err:
+            raise OrderNotFound(order_id) from err
+
+    @staticmethod
+    def check_can_delete(order: Order) -> bool:
+        today = date.today()
+        for i in order.dates:
+            if i.status == Status.ARRIVAL:
+                if (i.date - today) > 3:
+                    return True
+        return False
