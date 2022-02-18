@@ -71,7 +71,19 @@ class Order(Model):
     dates: List[BookingDate] = field(default_factory=list)
 
     def __post_init__(self):
+
         assert len(self.dates) == 2, "Две даты в ордере"
+
+    @property
+    def get_dict(self) -> dict:  # из-за того что я даты прибытия убытия храню списком очень сложное получение
+        res = {}
+        for i in self.dates:
+            if i.status == Status.ARRIVAL:
+                res["arrival"] = i.date
+            elif i.status == Status.DEPARTURE:
+                res["departure"] = i.date
+        res["identity"] = self.identity
+        return res
 
 
 @dataclass(unsafe_hash=True)
@@ -311,6 +323,6 @@ class OrderManager:
         today = date.today()
         for i in order.dates:
             if i.status == Status.ARRIVAL:
-                if (i.date - today) > 3:
+                if (i.date - today) > timedelta(days=3):
                     return True
         return False

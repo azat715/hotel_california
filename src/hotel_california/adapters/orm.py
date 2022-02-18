@@ -71,7 +71,7 @@ def start_mappers():
     mapper_registry.map_imperatively(
         Order,
         order,
-        properties={"dates": relationship(BookingDate, backref="order")})
+        properties={"dates": relationship(BookingDate, backref="order", cascade="all,delete")})
     mapper_registry.map_imperatively(BookingDate, dates)
 
 

@@ -86,13 +86,14 @@ def add_room(number: int, capacity: int, price: float, workers: UOW) -> Room:
         room = manager.create(number, capacity, price)
         worker.data.add(room)
         worker.commit()
-        return room
+        return room.number
 
 
 def get_order_by_id(order_id: int, workers: UOW) -> Order:
     with workers as worker:
         manager = OrderManager.init(worker.data.all())
-        return manager.get_order_by_id(order_id)
+        order = manager.get_order_by_id(order_id)
+        return order.get_dict
 
 
 def find_rooms(cap: int, arrival: str, departure: str, workers: UOW) -> List[Room]:
@@ -106,6 +107,17 @@ def get_room_by_num(num: int, workers: UOW) -> Room:
     with workers as worker:
         manager = RoomManager.init(worker.data.all())
         return manager.get_room_by_num(num)
+
+
+def get_room_orders(num: int, workers: UOW) -> List[dict]:
+    with workers as worker:
+        manager = RoomManager.init(worker.data.all())
+        room = manager.get_room_by_num(num)
+        res = []
+        for order in room.orders:
+            res.append(order.get_dict)
+        breakpoint()
+        return res
 
 
 def check_room(num: int, arrival: date, departure: date, workers: UOW) -> Room:
@@ -132,3 +144,4 @@ def delete_order(order_id, workers: UOW):
         else:
             message = "Бронь можно отменить только за три дня до заезда"
             raise OrderNotCancel(message)
+        worker.commit()
