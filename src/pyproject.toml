@@ -16,6 +16,7 @@ alembic = "^1.7.6"
 psycopg2-binary = "^2.9.3"
 passlib = {extras = ["bcrypt"], version = "^1.7.4"}
 python-jose = {extras = ["cryptography"], version = "^3.3.0"}
+requests = "^2.27.1"
 
 [tool.poetry.dev-dependencies]
 pytest = "^6.2.5"

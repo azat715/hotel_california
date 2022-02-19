@@ -3,9 +3,7 @@ from datetime import date
 from fastapi import Depends, FastAPI, Request
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
-from pydantic import BaseModel
 
-from hotel_california.adapters.orm import start_mappers
 from hotel_california.config import get_settings
 from hotel_california.entrypoints.app.routers.auth import auth_router
 from hotel_california.entrypoints.app.routers.users import users_router
@@ -19,7 +17,6 @@ from hotel_california.entrypoints.app.auth_bearer import validate_token
 
 settings = get_settings()
 app = FastAPI(title=settings.APP_NAME)
-start_mappers()
 
 app.include_router(auth_router)
 app.include_router(users_router)
@@ -58,10 +55,3 @@ async def test():
 @app.get("/test_auth", dependencies=[Depends(validate_token)])
 async def test_auth():
     return {"message": "Hello World"}
-
-
-class Item(BaseModel):
-    number: int  # номер комнаты, уникальный
-    capacity: int
-    price: float
-

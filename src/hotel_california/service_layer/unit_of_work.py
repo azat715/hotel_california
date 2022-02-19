@@ -1,14 +1,8 @@
 from abc import ABC, abstractmethod
 
-from sqlalchemy import create_engine
-from sqlalchemy.orm import sessionmaker
 from sqlalchemy.orm.session import Session
 
-from hotel_california.adapters.repository import (
-    AbstractRepository,
-    FakeDb,
-    UserRepository,
-)
+from hotel_california.adapters.repository import AbstractRepository
 from hotel_california.config import get_settings
 
 settings = get_settings()
@@ -49,16 +43,11 @@ class FakeUnitOfWork(UOW):
         return self
 
 
-ENGINE = create_engine(settings.DB.url)
-DEFAULT_SESSION_FACTORY = sessionmaker(bind=ENGINE)
-
-
 class SqlAlchemyUOW(UOW):
     def __init__(
-        self, repo: AbstractRepository, session_factory=DEFAULT_SESSION_FACTORY
+        self, repo: AbstractRepository, session: Session
     ):
-        self.session_factory = session_factory
-        self.session = self.session_factory()  # type: Session
+        self.session = session
         self.data = repo(self.session)
 
     def __enter__(self):

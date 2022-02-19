@@ -10,7 +10,7 @@ from hotel_california.service_layer.unit_of_work import UOW
 users_router = APIRouter()
 
 
-@users_router.post("/users", dependencies=[Depends(check_admin)])
+@users_router.post("/users", dependencies=[Depends(check_admin)], status_code=201)
 async def add_user_endpoint(
     user: UserForm,
     worker: UOW = Depends(get_user_worker),

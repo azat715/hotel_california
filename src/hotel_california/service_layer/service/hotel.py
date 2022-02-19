@@ -116,7 +116,6 @@ def get_room_orders(num: int, workers: UOW) -> List[dict]:
         res = []
         for order in room.orders:
             res.append(order.get_dict)
-        breakpoint()
         return res
 
 

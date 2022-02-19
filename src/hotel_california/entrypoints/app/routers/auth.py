@@ -2,7 +2,7 @@ from fastapi import APIRouter, Body, Depends
 
 from hotel_california.entrypoints.app.auth_bearer import validate_refresh_token
 from hotel_california.entrypoints.app.serializers import TokenResponse, UserLoginSchema
-from hotel_california.entrypoints.app.workers import get_user_worker
+from hotel_california.entrypoints.app.workers import get_user_worker, get_db
 from hotel_california.service_layer.service.hotel import login_user, refresh_token
 from hotel_california.service_layer.unit_of_work import UOW
 
