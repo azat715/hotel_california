@@ -186,8 +186,8 @@ class UserManager:
             payload["aud"] = audience
         return jwt.encode(payload, self.SECRET_KEY, algorithm=self.ALGORITHM)
 
-    def get_access_token(self, email: str) -> str:
-        return self._get_token(email, expires_delta=self.ACCESS_TOKEN_EXPIRE_MINUTES)
+    def get_access_token(self, email: str, expires_delta: int = ACCESS_TOKEN_EXPIRE_MINUTES) -> str:
+        return self._get_token(email, expires_delta=expires_delta)
 
     def get_refresh_token(self, email: str) -> str:
         return self._get_token(

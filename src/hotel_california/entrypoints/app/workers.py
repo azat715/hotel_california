@@ -7,6 +7,7 @@ from hotel_california.service_layer.unit_of_work import SqlAlchemyUOW
 
 start_mappers()
 
+
 def get_db():
     db = SessionLocal()
     try:

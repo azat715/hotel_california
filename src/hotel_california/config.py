@@ -1,6 +1,10 @@
 from functools import lru_cache
 
 from pydantic import BaseSettings
+from pathlib import Path
+
+BASE_DIR = Path(__file__).resolve().parent
+FASTAPI_DIR = BASE_DIR.joinpath('entrypoints', 'app')
 
 
 class Credentials(BaseSettings):
@@ -47,10 +51,18 @@ class Security(BaseSettings):
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 30
 
 
+class Folders(BaseSettings):
+    base_folder: Path = BASE_DIR
+    fastapi_folder = FASTAPI_DIR
+    static_folder: str = "static"
+    template_dir: str = "templates"
+
+
 class Settings(BaseSettings):
     APP_NAME = "hotel_california"
     DB: DatabaseSqlalchemy = DatabaseSqlalchemy()
     AUTH: Security = Security()
+    PATHS: Folders = Folders()
 
     class Config:
         case_sensitive: bool = True

@@ -28,7 +28,13 @@ def add_user(name: str, email: str, password: str, is_admin: bool, workers: UOW)
         worker.commit()
 
 
-def login_user(email: str, password: str, workers: UOW) -> Tuple[str, str]:
+def get_user_by_email(email: str, workers: UOW):
+    with workers as worker:
+        manager = UserManager.init(worker.data.all())
+        return manager.get_user_by_email(email)
+
+
+def login_user_and_get_tokens(email: str, password: str, workers: UOW) -> Tuple[str, str]:
     with workers as worker:
         manager = UserManager.init(worker.data.all())
         user = manager.login(email, password)
@@ -38,6 +44,13 @@ def login_user(email: str, password: str, workers: UOW) -> Tuple[str, str]:
         worker.data.add(user)
         worker.commit()
         return access, refresh
+
+
+def get_access_token(email: str, password: str, workers: UOW) -> Tuple[str, str]:
+    with workers as worker:
+        manager = UserManager.init(worker.data.all())
+        manager.login(email, password)
+        return manager.get_access_token(email)
 
 
 def check_is_admin(email: str, workers: UOW) -> bool:
