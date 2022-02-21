@@ -1,0 +1,19 @@
+{% extends "base.html" %}
+{% block content %}
+    {% from "_formhelpers.html" import render_field %}
+    <form method=post>
+        <div class="form-group">{{ render_field(form.name) }} </div>
+        <div class="form-group">{{ render_field(form.email) }} </div>
+        <div class="form-group">{{ render_field(form.password) }} </div>
+         <div class="form-group">{{ render_field(form.confirm) }} </div>
+         <div class="form-group">
+             <div class="form-check">
+                  <input class="form-check-input" type="checkbox" value="" id="{{ form.is_admin.id }}">
+                  <label class="form-check-label" for="{{ form.is_admin.id }}">
+                    {{ form.is_admin.label.text}}
+                  </label>
+            </div>
+         </div>
+        <button type="submit" class="btn btn-primary">Submit</button>
+    </form>
+{% endblock %}

@@ -1,0 +1,23 @@
+{% extends "base.html" %}
+{% block content %}
+<a href="/admin/users/add" class="btn btn-primary" role="button">Add user</a>
+<table class="table">
+  <thead>
+    <tr>
+      <th scope="col">name</th>
+      <th scope="col">email</th>
+      <th scope="col">is_admin</th>
+
+    </tr>
+  </thead>
+  <tbody>
+    {% for user in users %}
+         <tr>
+          <td>{{ user.name }}</td>
+          <td>{{ user.email }}</td>
+          <td>{{ user.is_admin }}</td>
+        </tr>
+    {% endfor %}
+  </tbody>
+</table>
+{% endblock %}

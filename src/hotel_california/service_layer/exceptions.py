@@ -42,7 +42,7 @@ class RoomExistError(BusinessLogicError):
 
 class RoomNonFree(BusinessLogicError):
     def __init__(self, number):
-        message = "Комната {number} невозможно забронировать"  # например можно передавать uuid брони с которой пересечение
+        message = f"Комната {number} невозможно забронировать"  # например можно передавать uuid брони с которой пересечение
         super().__init__(message)
 
 

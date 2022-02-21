@@ -10,7 +10,7 @@ from hotel_california.entrypoints.app.auth_bearer import validate_token
 from hotel_california.entrypoints.app.serializers import RoomAddForm, RoomResponse, OrderResponse
 from hotel_california.entrypoints.app.workers import get_room_worker, get_order_worker
 from hotel_california.service_layer.service.hotel import add_room, find_rooms, check_room, create_order, \
-    get_order_by_id, get_room_by_num, delete_order, get_room_orders
+    get_order_by_id, get_room_by_num, delete_order, get_room_orders, booking
 from hotel_california.service_layer.unit_of_work import UOW
 
 rooms_router = APIRouter()
@@ -51,13 +51,7 @@ async def booking_room_endpoint(num: int, arrival: date, departure: date,
     """Забронировать номер
 
     (указываем номер, дата заезда, дата отъезда, возвращаем номер брони)"""
-    room = check_room(num, arrival, departure, workers=room_worker)
-    order = create_order(arrival, departure, workers=order_worker)
-    identity = order.identity
-    room.orders.append(order)
-    with room_worker as worker:
-        worker.data.add(room)
-        worker.commit()
+    identity = booking(num, arrival, departure, room_worker, order_worker)
     return JSONResponse(
         status_code=200,
         content={"order_id": identity},

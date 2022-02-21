@@ -16,7 +16,8 @@
           <th scope="row">{{ room.number }}</th>
           <td>{{ room.capacity }}</td>
           <td>{{ room.price }}</td>
-          <td>"link на ордерс"</td>
+          <td><a href="/admin/rooms/{{ room.number}}/orders" class="link-success">Orders</a></td>
+          <td><a href="/admin/rooms/{{ room.number}}/orders/add" class="link-success">Бронь</a></td>
         </tr>
     {% endfor %}
   </tbody>

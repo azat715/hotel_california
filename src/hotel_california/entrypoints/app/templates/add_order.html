@@ -2,9 +2,11 @@
 {% block content %}
     {% from "_formhelpers.html" import render_field %}
     <form method=post>
-        <div class="form-group">{{ render_field(form.number) }} </div>
-        <div class="form-group">{{ render_field(form.capacity) }} </div>
-        <div class="form-group">{{ render_field(form.price) }} </div>
+        <div class="form-group">
+            {{ render_field(form.arrival) }}
+             {{ render_field(form.departure) }}
+        </div>
+
         <button type="submit" class="btn btn-primary">Submit</button>
     </form>
 {% endblock %}

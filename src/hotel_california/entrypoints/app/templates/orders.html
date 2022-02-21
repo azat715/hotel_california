@@ -1,0 +1,23 @@
+{% extends "base.html" %}
+{% block content %}
+<table class="table">
+  <thead>
+    <tr>
+      <th scope="col">identity</th>
+      <th scope="col">arrival</th>
+      <th scope="col">departure</th>
+
+    </tr>
+  </thead>
+  <tbody>
+    {% for order in orders %}
+         <tr>
+          <td>{{ order.identity }}</td>
+          <td>{{ order.arrival }}</td>
+          <td>{{ order.departure }}</td>
+          <td><a href="/admin/orders/{{ order.identity }}/cancel" class="link-success">Отмена брони</a></td>
+        </tr>
+    {% endfor %}
+  </tbody>
+</table>
+{% endblock %}

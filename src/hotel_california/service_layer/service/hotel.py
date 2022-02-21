@@ -34,6 +34,12 @@ def get_user_by_email(email: str, workers: UOW):
         return manager.get_user_by_email(email)
 
 
+def get_users(workers: UOW) -> List[Room]:
+    with workers as worker:
+        manager = UserManager.init(worker.data.all())
+        return manager.users.values()
+
+
 def login_user_and_get_tokens(email: str, password: str, workers: UOW) -> Tuple[str, str]:
     with workers as worker:
         manager = UserManager.init(worker.data.all())
@@ -102,7 +108,7 @@ def add_room(number: int, capacity: int, price: float, workers: UOW) -> Room:
         return room.number
 
 
-def get_order_by_id(order_id: int, workers: UOW) -> Order:
+def get_order_by_id(order_id: int, workers: UOW) -> dict:
     with workers as worker:
         manager = OrderManager.init(worker.data.all())
         order = manager.get_order_by_id(order_id)
@@ -150,6 +156,7 @@ def create_order(arrival: date, departure: date, workers: UOW):
         manager = OrderManager.init(worker.data.all())
         dates = (BookingDate.parse_str(arrival, Status.ARRIVAL), BookingDate.parse_str(departure, Status.DEPARTURE))
         order = manager.create(dates)
+        worker.commit()
         return order
 
 
@@ -163,3 +170,14 @@ def delete_order(order_id, workers: UOW):
             message = "Бронь можно отменить только за три дня до заезда"
             raise OrderNotCancel(message)
         worker.commit()
+
+
+def booking(num:  int, arrival: date, departure: date, room_worker: UOW, order_worker: UOW) -> int:
+    room = check_room(num, arrival, departure, workers=room_worker)
+    order = create_order(arrival, departure, workers=order_worker)
+    identity = order.identity
+    room.orders.append(order)
+    with room_worker as worker:
+        worker.data.add(room)
+        worker.commit()
+    return identity

@@ -26,7 +26,7 @@ class UserLoginSchema(BaseModel):
 class UserForm(BaseModel):
     name: str
     email: str  # должно быть уникальным
-    password: str  # hash пароля
+    password: str  # пароль
     is_admin: bool = False
 
 

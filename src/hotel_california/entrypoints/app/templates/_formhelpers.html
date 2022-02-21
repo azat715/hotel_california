@@ -1,9 +1,12 @@
 {% macro render_field(field) %}
-  <label for="{{ field.id }}">{{ field.label }}</label>
-  <input type="{{ field.id }}" class="form-control" id="{{ field.id }}" value={{ field.data }}>
-   {% if field.errors %}
-      {% for error in field.errors %}
-       <div class="invalid-feedback"> {{ error }} </div>
-      {% endfor %}
-   {% endif %}
+{% set describedby = field.id + 'Help' %}
+<div class="mb-3">
+    {{ field.label(class="form-label") }}
+    {{ field(class="form-control", aria_describedby=describedby,  **kwargs)|safe }}
+      {% if field.errors %}
+        {% for error in field.errors %}
+           <div id="{{ describedby }}" class="form-text">{{ error }}</div>
+        {% endfor %}
+      {% endif %}
+</div>
 {% endmacro %}
