@@ -1,0 +1,24 @@
+{% extends "base.html" %}
+{% block content %}
+<a href="/admin/rooms/add" class="btn btn-primary" role="button">Add room</a>
+<table class="table">
+  <thead>
+    <tr>
+      <th scope="col">number</th>
+      <th scope="col">capacity</th>
+      <th scope="col">price</th>
+
+    </tr>
+  </thead>
+  <tbody>
+    {% for room in rooms %}
+         <tr>
+          <th scope="row">{{ room.number }}</th>
+          <td>{{ room.capacity }}</td>
+          <td>{{ room.price }}</td>
+          <td>"link на ордерс"</td>
+        </tr>
+    {% endfor %}
+  </tbody>
+</table>
+{% endblock %}

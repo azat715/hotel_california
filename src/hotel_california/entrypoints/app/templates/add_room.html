@@ -1,0 +1,10 @@
+{% extends "base.html" %}
+{% block content %}
+    {% from "_formhelpers.html" import render_field %}
+    <form method=post>
+        <div class="form-group">{{ render_field(form.number) }} </div>
+        <div class="form-group">{{ render_field(form.capacity) }} </div>
+        <div class="form-group">{{ render_field(form.price) }} </div>
+        <button type="submit" class="btn btn-default">Submit</button>
+    </form>
+{% endblock %}

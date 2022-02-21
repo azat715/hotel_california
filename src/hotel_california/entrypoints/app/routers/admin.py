@@ -5,9 +5,9 @@ from starlette.authentication import requires
 from fastapi.responses import RedirectResponse
 
 from hotel_california.config import get_settings
-from hotel_california.entrypoints.app.forms import LoginForm
-from hotel_california.service_layer.service.hotel import get_access_token
-from hotel_california.entrypoints.app.workers import get_user_worker
+from hotel_california.entrypoints.app.forms import LoginForm, RoomForm
+from hotel_california.service_layer.service.hotel import get_access_token, get_rooms, add_room
+from hotel_california.entrypoints.app.workers import get_user_worker, get_room_worker
 from hotel_california.service_layer.unit_of_work import UOW
 
 settings = get_settings()
@@ -52,7 +52,7 @@ async def login(request: Request, worker: UOW = Depends(get_user_worker)):
     form = LoginForm(await request.form())
 
     if request.method == 'POST' and form.validate():
-        response = templates.TemplateResponse("login.html", {"request": request, 'form': form})
+        response = RedirectResponse("/admin/rooms")
         token = get_access_token(form.email.data, form.password.data, workers=worker)
         print("Успех")
         print(form.email.data)
@@ -66,11 +66,32 @@ async def login(request: Request, worker: UOW = Depends(get_user_worker)):
             expires=1800,
         )
         return response
-
+    breakpoint()
     return templates.TemplateResponse("login.html", {"request": request, 'form': form})
 
 
 @admin_router.get("/admin/logout", response_class=RedirectResponse)
-async def logout(response: Response):
+@requires(['authenticated', 'admin'])
+async def logout(request: Request, response: Response):
     response.delete_cookie("Authorization")
     return "/admin/login"
+
+
+@admin_router.get("/admin/rooms")
+@requires(['authenticated', 'admin'])
+async def rooms_endpoint(request: Request, worker: UOW = Depends(get_room_worker)):
+    rooms = get_rooms(workers=worker)
+    rooms = sorted(rooms, key=lambda x: x.number)
+    return templates.TemplateResponse("rooms.html", {"request": request, 'rooms': rooms})
+
+
+@admin_router.get("/admin/rooms/add")
+@admin_router.post("/admin/rooms/add")
+@requires(['authenticated', 'admin'])
+async def room_add_endpoint(request: Request, worker: UOW = Depends(get_room_worker)):
+    form = RoomForm(await request.form())
+    if request.method == 'POST' and form.validate():
+
+        add_room(form.number.data, form.capacity.data, form.price.data, workers=worker)
+        return RedirectResponse("/admin/rooms")
+    return templates.TemplateResponse("add_room.html", {"request": request, 'form': form})

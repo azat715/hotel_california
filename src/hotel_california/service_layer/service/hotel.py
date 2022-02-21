@@ -122,6 +122,12 @@ def get_room_by_num(num: int, workers: UOW) -> Room:
         return manager.get_room_by_num(num)
 
 
+def get_rooms(workers: UOW) -> List[Room]:
+    with workers as worker:
+        manager = RoomManager.init(worker.data.all())
+        return manager.rooms.values()
+
+
 def get_room_orders(num: int, workers: UOW) -> List[dict]:
     with workers as worker:
         manager = RoomManager.init(worker.data.all())
