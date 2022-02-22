@@ -1,0 +1,16 @@
+{% block header %}
+    <div class="container">
+        <header class="d-flex justify-content-center py-3">
+          <ul class="nav nav-pills">
+            <li class="nav-item"><a href="/admin/rooms" class="nav-link">Номера</a></li>
+            <li class="nav-item"><a href="/admin/users" class="nav-link">Пользователи</a></li>
+            <li class="nav-item"><a href="/admin/logout" class="nav-link">Logout</a></li>
+          </ul>
+          {% if request.user.is_authenticated %}
+              <div class="col-md-3 text-end">
+                  <p>{{ request.user.email }}</p>
+              </div>
+          {% endif %}
+        </header>
+    </div>
+{% endblock %}

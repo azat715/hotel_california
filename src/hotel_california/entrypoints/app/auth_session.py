@@ -39,7 +39,6 @@ class SessionAuthBackend(AuthenticationBackend):
         if "Authorization" in conn.headers:
             # пропускаю чтобы работала JWT
             return
-
         cookie_authorization: str = conn.cookies.get("Authorization")
         if cookie_authorization:
             _, token = cookie_authorization.split(" ")

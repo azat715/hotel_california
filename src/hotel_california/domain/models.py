@@ -240,12 +240,14 @@ class RoomManager:
             res.extend(i.dates)
         # res.extend([i.dates for i in room.orders])
         # сортирую по времени
+        breakpoint()
         res = sorted(res, key=lambda x: x.date)
         # если идут два подряд заезда/выезда ошибка
         while res:
             first = res.pop(0)
             second = res.pop(0)
             if second.status == first.status:
+                breakpoint()
                 return False
         return True
 
