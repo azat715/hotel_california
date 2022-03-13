@@ -233,21 +233,16 @@ class RoomManager:
         Raises:
             RoomNonFree: Если комната не свободна то RoomNonFree
         """
-        res = []
-        res.extend(dates)
-        # добавляю существующие брони
+        arrival, departure = dates
         for i in room.orders:
-            res.extend(i.dates)
-        # res.extend([i.dates for i in room.orders])
-        # сортирую по времени
-        breakpoint()
-        res = sorted(res, key=lambda x: x.date)
-        # если идут два подряд заезда/выезда ошибка
-        while res:
-            first = res.pop(0)
-            second = res.pop(0)
-            if second.status == first.status:
-                breakpoint()
+            order = i.get_dict
+            if order['arrival'] == arrival.date:
+                return False
+            if order['arrival'] == arrival.date and order['departure'] == departure.date:
+                return False
+            if order['arrival'] < arrival.date < order['departure']:
+                return False
+            if order['arrival'] < departure.date < order['departure']:
                 return False
         return True
 
